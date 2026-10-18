@@ -173,8 +173,8 @@ def main():
 
     if tool == "CHAT":
         print("\n" + chat(
-            f"The user said: {question}\n"
-            "You are the Job Market Agent. Reply in ONE friendly sentence. "
+            f"Today is {__import__('datetime').date.today().strftime('%A, %d %B %Y')}.\n" f"The user said: {question}\n"
+            "You are the Job Market Agent (that is your name). Reply in ONE friendly sentence. "
             "Do NOT state any facts about jobs, salaries, benefits or the "
             "market - you have no data for this message. Then invite them to "
             "ask about salaries, roles, skills, companies or locations."))

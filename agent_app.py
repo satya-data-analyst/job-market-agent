@@ -226,7 +226,7 @@ if question := st.chat_input("Ask about the job market..."):
             tool = choose_tool(question)
             if tool == "CHAT":
                 answer = chat(
-                    f"The user said: {question}\n"
+                    f"Today is {__import__('datetime').date.today().strftime('%A, %d %B %Y')}.\n" f"The user said: {question}\n"
                     "You are a job-market assistant. Reply in one friendly sentence, "
                     "then invite them to ask about the job data (salaries, roles, "
                     "skills, companies, locations).")
