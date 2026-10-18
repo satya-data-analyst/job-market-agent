@@ -35,6 +35,15 @@ question -> router (SQL / RAG / chat) -> tool runs -> grounded answer
 
 Python, Streamlit, SQLite, fastembed, Groq
 
+## Known data issues
+
+- The source dataset mis-detects some pay periods (e.g. a "$115,000/yr" role
+  recorded as monthly), producing absurd annual figures. Salary queries exclude
+  values above $1,000,000 to avoid skew.
+- `seniority` is 94% empty, so seniority questions are unreliable.
+- Only 1,000 of the 10,000 descriptions are embedded for search (compute limits).
+
+
 ## Note on data
 
 Built on the public "Job Postings with Salaries (October 2026)" dataset.

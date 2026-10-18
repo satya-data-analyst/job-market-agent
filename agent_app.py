@@ -95,11 +95,11 @@ def choose_tool(question):
 SQL  -> questions about numbers, counts, salaries, locations, companies,
         dates, levels: "how many", "average", "top", "which companies",
         "salary range", "list jobs where ...".
-DOCS -> questions about what the job postings SAY: skills, requirements,
-        responsibilities, benefits, "what does X require", "do any jobs
-        mention ...".
-CHAT -> a greeting or small talk, not a question about the data
-        ("hi", "hello", "how are you", "thanks").
+DOCS -> anything about what the job postings SAY: skills, requirements,
+        responsibilities, benefits, holidays, travel, policies, security,
+        "what does X require", "do any jobs mention ...", "is there any ...".
+CHAT -> ONLY a pure greeting or small talk ("hi", "hello", "how are you",
+        "thanks"). If the message asks ANYTHING about the data, use SQL or DOCS.
 
 Answer with exactly one word: SQL, DOCS or CHAT.
 
@@ -118,7 +118,9 @@ Rules:
 - Only a single SELECT. Never modify data.
 - Use the exact column names above.
 - Columns marked "% empty" are mostly missing — filter out the NULLs.
-- For yearly salary comparisons use salary_min_annual / salary_max_annual.
+- For salary questions use the *_annual columns, but EXCLUDE implausible values,
+  e.g. add `AND salary_max_annual < 1000000`. A few rows have mis-parsed pay
+  periods and show absurd annual figures that skew results.
 - SQLite text comparison is CASE-SENSITIVE. Never use `col = 'Remote'`.
   Compare case-insensitively: LOWER(col) = 'remote' or LOWER(col) LIKE '%remote%'.
   (The values in this table are lower-case.)
