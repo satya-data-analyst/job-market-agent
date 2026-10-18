@@ -37,9 +37,9 @@ Python, Streamlit, SQLite, fastembed, Groq
 
 ## Known data issues
 
-- The source dataset mis-detects some pay periods (e.g. a "$115,000/yr" role
-  recorded as monthly), producing absurd annual figures. Salary queries exclude
-  values above $1,000,000 to avoid skew.
+- The source dataset mis-detects some pay periods. Salary rankings use only
+  postings with `salary_period = 'year'` and read `salary_min`/`salary_max`
+  directly, avoiding the inflated `*_annual` columns.
 - `seniority` is 94% empty, so seniority questions are unreliable.
 - Only 1,000 of the 10,000 descriptions are embedded for search (compute limits).
 
