@@ -78,6 +78,8 @@ Rules:
 - SQLite text comparison is CASE-SENSITIVE. Never use `col = 'Remote'`.
   Compare case-insensitively: LOWER(col) = 'remote' or LOWER(col) LIKE '%remote%'.
   (The values in this table are lower-case.)
+- For ANY salary question, restrict to ONE currency, e.g. `salary_currency = 'USD'`,
+  and state which currency you used. Mixing currencies gives nonsense medians.
 - Return ONLY the SQL, no explanation, no markdown.
 
 Question: {question}""")
@@ -92,12 +94,13 @@ Question: {question}""")
 
     if not rows:
         return "The query returned no rows.", sql
-    cols = rows[0].keys()
-    out = " | ".join(cols) + "\n"
+    cols = list(rows[0].keys())
+    out = "| " + " | ".join(cols) + " |\n"
+    out += "|" + "|".join(["---"] * len(cols)) + "|\n"
     for r in rows[:20]:
-        out += " | ".join(str(r[c]) for c in cols) + "\n"
+        out += "| " + " | ".join(str(r[c]) for c in cols) + " |\n"
     if len(rows) > 20:
-        out += f"... and {len(rows) - 20} more rows"
+        out += f"\n*... and {len(rows) - 20} more rows*"
     return out, sql
 
 

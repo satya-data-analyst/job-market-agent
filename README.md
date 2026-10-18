@@ -6,7 +6,7 @@ that tool.
 
 ![Job Market Agent](screenshot.png)
 
-**Live demo:** (add your Streamlit URL here)
+**Live demo:** https://job-market-agent-v1.streamlit.app
 
 ## What it does
 
