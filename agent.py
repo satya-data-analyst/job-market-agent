@@ -74,9 +74,10 @@ Rules:
 - Only a single SELECT. Never modify data.
 - Use the exact column names above.
 - Columns marked "% empty" are mostly missing — filter out the NULLs.
-- For salary questions use the *_annual columns, but EXCLUDE implausible values,
-  e.g. add `AND salary_max_annual < 1000000`. A few rows have mis-parsed pay
-  periods and show absurd annual figures that skew results.
+- For salary questions, restrict to `salary_period = 'year'` and use
+  salary_min / salary_max directly (they are already annual). Do NOT use the
+  *_annual columns: some rows have mis-detected pay periods and are inflated
+  ~12x, which skews every "top salaries" list.
 - SQLite text comparison is CASE-SENSITIVE. Never use `col = 'Remote'`.
   Compare case-insensitively: LOWER(col) = 'remote' or LOWER(col) LIKE '%remote%'.
   (The values in this table are lower-case.)
