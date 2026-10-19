@@ -2,3 +2,7 @@ streamlit
 fastembed
 openai
 numpy
+pandas
+scikit-learn
+joblib
+pytest

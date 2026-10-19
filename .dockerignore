@@ -1,0 +1,10 @@
+# Things that should NOT go into the Docker image.
+.venv/
+__pycache__/
+*.pyc
+.env
+data/
+.git/
+.gitignore
+eval_results.json
+workplace_model.joblib
