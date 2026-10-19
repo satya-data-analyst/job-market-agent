@@ -13,6 +13,7 @@ Run:   python agent.py
 import os
 import re
 import sqlite3
+import time
 
 import numpy as np
 from fastembed import TextEmbedding
@@ -39,13 +40,22 @@ def get_api_key():
 client = None  # set in main()
 
 
-def chat(prompt):
-    resp = client.chat.completions.create(
-        model=MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0,
-    )
-    return resp.choices[0].message.content.strip()
+def chat(prompt, tries=5):
+    """Call the model, retrying with backoff if we hit the rate limit."""
+    for attempt in range(tries):
+        try:
+            resp = client.chat.completions.create(
+                model=MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0,
+            )
+            return resp.choices[0].message.content.strip()
+        except Exception as e:
+            msg = str(e).lower()
+            if ("429" in msg or "rate limit" in msg) and attempt < tries - 1:
+                time.sleep(6 * (attempt + 1))
+                continue
+            raise
 
 
 # ---------- tool 1: SQL over the database ----------

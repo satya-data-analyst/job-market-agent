@@ -48,3 +48,8 @@ Python, Streamlit, SQLite, fastembed, Groq
 
 Built on the public "Job Postings with Salaries (October 2026)" dataset.
 Descriptions belong to the employers that published them.
+
+## Rate Limit Note
+
+- The app retries with backoff on API rate limits (free tier: 8k tokens/min),
+  and the evaluator paces its questions to stay under the cap.

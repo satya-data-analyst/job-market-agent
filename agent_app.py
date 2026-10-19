@@ -10,6 +10,7 @@ Run:   streamlit run agent_app.py
 import os
 import re
 import sqlite3
+import time
 
 import numpy as np
 import streamlit as st
@@ -44,14 +45,23 @@ def safe_md(text):
     return text.replace("$", r"\$")
 
 
-def chat(prompt):
+def chat(prompt, tries=5):
+    """Call the model, retrying with backoff if we hit the rate limit."""
     client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=get_api_key())
-    resp = client.chat.completions.create(
-        model=MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0,
-    )
-    return resp.choices[0].message.content.strip()
+    for attempt in range(tries):
+        try:
+            resp = client.chat.completions.create(
+                model=MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0,
+            )
+            return resp.choices[0].message.content.strip()
+        except Exception as e:
+            msg = str(e).lower()
+            if ("429" in msg or "rate limit" in msg) and attempt < tries - 1:
+                time.sleep(6 * (attempt + 1))
+                continue
+            raise
 
 
 @st.cache_resource(show_spinner="Loading embedding model...")

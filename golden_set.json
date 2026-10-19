@@ -1,0 +1,140 @@
+[
+  {
+    "question": "How many jobs list their workplace type as remote?",
+    "expect_tool": "SQL",
+    "expect_any": [
+      "2111",
+      "2,111"
+    ],
+    "category": "sql-count",
+    "note": "workplace_type = 'remote'"
+  },
+  {
+    "question": "Which company has the most job postings?",
+    "expect_tool": "SQL",
+    "expect_any": [
+      "Alterra"
+    ],
+    "category": "sql-top",
+    "note": "Alterra with 23"
+  },
+  {
+    "question": "How many job titles contain the word analyst?",
+    "expect_tool": "SQL",
+    "expect_any": [
+      "324"
+    ],
+    "category": "sql-filter",
+    "note": "title LIKE %analyst%"
+  },
+  {
+    "question": "How many distinct job titles are there in the dataset?",
+    "expect_tool": "SQL",
+    "expect_any": [
+      "8606",
+      "8,606"
+    ],
+    "category": "sql-count",
+    "note": "COUNT(DISTINCT title)"
+  },
+  {
+    "question": "How many distinct companies are in the dataset?",
+    "expect_tool": "SQL",
+    "expect_any": [
+      "5346",
+      "5,346"
+    ],
+    "category": "sql-count",
+    "note": "COUNT(DISTINCT company)"
+  },
+  {
+    "question": "How many postings state a yearly salary in USD?",
+    "expect_tool": "SQL",
+    "expect_any": [
+      "6426",
+      "6,426"
+    ],
+    "category": "sql-count",
+    "note": "salary_period='year' AND salary_currency='USD'"
+  },
+  {
+    "question": "hello there",
+    "expect_tool": "CHAT",
+    "expect_any": [],
+    "category": "chat",
+    "note": "greeting - should not touch the data"
+  },
+  {
+    "question": "thanks, that's all for now",
+    "expect_tool": "CHAT",
+    "expect_any": [],
+    "category": "chat",
+    "note": "small talk"
+  },
+  {
+    "question": "what is your name?",
+    "expect_tool": "CHAT",
+    "expect_any": [],
+    "category": "chat",
+    "note": "small talk"
+  },
+  {
+    "question": "What skills do data analyst roles require?",
+    "expect_tool": "DOCS",
+    "expect_any": [
+      "analyst",
+      "sql",
+      "data"
+    ],
+    "category": "rag",
+    "note": "skills question - needs the descriptions"
+  },
+  {
+    "question": "Do any job postings mention AI agents?",
+    "expect_tool": "DOCS",
+    "expect_any": [
+      "agent"
+    ],
+    "category": "rag",
+    "note": "258 descriptions mention AI agents"
+  },
+  {
+    "question": "Do any postings offer paid holidays as a benefit?",
+    "expect_tool": "DOCS",
+    "expect_any": [
+      "holiday"
+    ],
+    "category": "rag",
+    "note": "Fort Worth posting lists 11 paid holidays"
+  },
+  {
+    "question": "What security responsibilities do the postings mention?",
+    "expect_tool": "DOCS",
+    "expect_any": [
+      "security"
+    ],
+    "category": "rag",
+    "note": "security roles are common"
+  },
+  {
+    "question": "Do any postings mention travel packages?",
+    "expect_tool": "DOCS",
+    "expect_any": [
+      "don't know",
+      "do not know",
+      "not mention",
+      "no mention",
+      "does not appear",
+      "doesn't appear",
+      "not present",
+      "no information",
+      "none",
+      "no postings",
+      "not listed",
+      "nothing",
+      "no evidence"
+    ],
+    "category": "rag-negative",
+    "note": "NEGATIVE TEST - nothing mentions travel packages; a good agent says so"
+  }
+]
