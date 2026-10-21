@@ -148,10 +148,62 @@ Postings:
     return answer, "\n".join(src)
 
 
+# ---------- tool 3: BOTH (SQL finds the rows, RAG reads them) ----------
+
+def tool_both(question):
+    sql = chat(f"""You are a SQLite expert. Write ONE SQLite query that returns
+the job_id column for the postings that best match the question.
+
+{get_schema()}
+
+Rules:
+- Only a single SELECT. Never modify data.
+- Return the job_id column (plus any columns the question asks for).
+- Always add LIMIT 10 unless the question asks for a different number.
+- SQLite text comparison is CASE-SENSITIVE: use LOWER(col) LIKE '%value%'.
+- For salary questions use salary_min / salary_max where salary_period = 'year'.
+- Return ONLY the SQL, no explanation, no markdown.
+
+Question: {question}""")
+    sql = re.sub(r"^```(?:sql)?|```$", "", sql, flags=re.MULTILINE).strip()
+
+    con = sqlite3.connect(DB_PATH)
+    con.row_factory = sqlite3.Row
+    try:
+        rows = con.execute(sql).fetchall()
+    except Exception as e:
+        con.close()
+        return f"Query failed: {e}", sql, ""
+    if not rows:
+        con.close()
+        return "The query returned no rows.", sql, ""
+    if "job_id" not in rows[0].keys():
+        con.close()
+        return "The query did not return a job_id column.", sql, ""
+
+    parts, src = [], []
+    for r in rows[:10]:
+        row = con.execute(
+            f"SELECT title, company, description FROM {TABLE} WHERE job_id = ?",
+            (str(r["job_id"]),),
+        ).fetchone()
+        if row:
+            parts.append(f"[{row['title']} at {row['company']}]\n{row['description'][:1200]}")
+            src.append(f"  {row['title']} @ {row['company']}")
+    con.close()
+
+    answer = chat("""Answer using ONLY the job postings below.
+If the answer is not there, say you don't know. Mention the companies you used.
+
+Postings:
+""" + "\n\n".join(parts) + f"\n\nQuestion: {question}")
+    return answer, sql, "\n".join(src)
+
+
 # ---------- the router ----------
 
 def choose_tool(question):
-    word = chat(f"""You route questions to one of two tools.
+    word = chat(f"""You route questions to one of four tools.
 
 SQL  -> questions about numbers, counts, salaries, locations, companies,
         dates, levels: "how many", "average", "top", "which companies",
@@ -159,14 +211,19 @@ SQL  -> questions about numbers, counts, salaries, locations, companies,
 DOCS -> anything about what the job postings SAY: skills, requirements,
         responsibilities, benefits, holidays, travel, policies, security,
         "what does X require", "do any jobs mention ...", "is there any ...".
+BOTH -> the question needs the database AND the descriptions together:
+        "top 10 roles and their requirements", "what skills do the
+        highest-paid jobs ask for", "list the best-paying jobs and what they want".
 CHAT -> ONLY a pure greeting or small talk ("hi", "hello", "how are you",
-        "thanks"). If the message asks ANYTHING about the data, use SQL or DOCS.
+        "thanks"). If the message asks ANYTHING about the data, use SQL, DOCS or BOTH.
 
-Answer with exactly one word: SQL, DOCS or CHAT.
+Answer with exactly one word: SQL, DOCS, BOTH or CHAT.
 
 Question: {question}""").upper()
     if "CHAT" in word:
         return "CHAT"
+    if "BOTH" in word:
+        return "BOTH"
     return "SQL" if "SQL" in word else "DOCS"
 
 
@@ -194,6 +251,11 @@ def main():
         answer, sql = tool_sql(question)
         print("\nSQL:\n" + sql)
         print("\nResult:\n" + answer)
+    elif tool == "BOTH":
+        answer, sql, src = tool_both(question)
+        print("\nSQL:\n" + sql)
+        print("\nPostings it read:\n" + src)
+        print("\nAnswer:\n" + answer)
     else:
         data = np.load(CACHE, allow_pickle=True)
         vecs, ids = data["vecs"].astype(float), data["ids"].astype(str)

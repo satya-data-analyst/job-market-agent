@@ -11,7 +11,7 @@
     "got_tool": "SQL",
     "tool_ok": true,
     "answer_ok": true,
-    "answer": "| remote_job_count |\n|---|\n| 2111 |\n"
+    "answer": "| COUNT(*) |\n|---|\n| 2111 |\n"
   },
   {
     "question": "Which company has the most job postings?",
@@ -79,7 +79,7 @@
     "got_tool": "SQL",
     "tool_ok": true,
     "answer_ok": true,
-    "answer": "| postings_with_yearly_usd_salary |\n|---|\n| 6426 |\n"
+    "answer": "| COUNT(*) |\n|---|\n| 6426 |\n"
   },
   {
     "question": "hello there",
@@ -127,7 +127,7 @@
     "got_tool": "DOCS",
     "tool_ok": true,
     "answer_ok": true,
-    "answer": "**Skills mentioned in the data\u2011analyst\u2011type postings**\n\n| Company (Posting) | Skills that the posting explicitly calls out for the role |\n|-------------------|-----------------------------------------------------------|\n| **MobilityWare \u2013 Senior Data Analyst** | \u2022 Designing, analyzing and interpreti"
+    "answer": "**Skills mentioned in the data\u2011analyst\u2011type postings**\n\n| Company (posting) | Skills that the posting explicitly calls for |\n|-------------------|----------------------------------------------|\n| **MobilityWare \u2013 Senior Data Analyst** | \u2022 Designing, analyzing and interpreting **A/B tests** for game "
   },
   {
     "question": "Do any job postings mention AI agents?",
@@ -140,7 +140,7 @@
     "got_tool": "DOCS",
     "tool_ok": true,
     "answer_ok": true,
-    "answer": "Yes. The following postings explicitly mention **AI agents**:\n\n- **Mimecast** \u2013 \u201cAI agents now move at machine speed with human\u2011level access\u2026\u201d\n- **monday.com** \u2013 \u201c\u2026bring people, workflows, and **AI agents** together on one flexible platform\u2026\u201d\n- **Maven AGI** \u2013 \u201cMaven\u2019s **agents** actually do the wor"
+    "answer": "Yes. The following job postings explicitly mention **AI agents**:\n\n- **Mimecast** \u2013 \u201cAI agents now move at machine speed with human\u2011level access\u2026\u201d\n- **monday.com** \u2013 \u201c\u2026bring people, workflows, and **AI agents** together on one flexible platform\u2026\u201d\n- **Maven AGI** \u2013 \u201cMaven\u2019s **agents** actually do the"
   },
   {
     "question": "Do any postings offer paid holidays as a benefit?",
@@ -153,7 +153,7 @@
     "got_tool": "DOCS",
     "tool_ok": true,
     "answer_ok": true,
-    "answer": "Yes. The **Sr. Professional Engineer \u2013 Major Roadway Infrastructure** posting from **The City of Fort Worth** lists **\u201c11\u202fPaid Holidays\u201d** as part of its benefits."
+    "answer": "Yes. The **Sr. Professional Engineer \u2013 Major Roadway Infrastructure** posting from **The City of Fort Worth** lists **\u201c11\u202fPaid Holidays\u201d** among its benefits."
   },
   {
     "question": "What security responsibilities do the postings mention?",
@@ -166,7 +166,7 @@
     "got_tool": "DOCS",
     "tool_ok": true,
     "answer_ok": true,
-    "answer": "**Security\u2011related duties mentioned in the postings**\n\n| Company / Posting | Security responsibilities listed |\n|-------------------|-----------------------------------|\n| **Comstock \u2013 Security Officer** | \u2022 Complete hourly patrol route using the security system<br>\u2022 Control access for guests, tenan"
+    "answer": "**Security\u2011related duties that appear in the posted job descriptions**\n\n| Company / Posting | Security responsibilities mentioned |\n|-------------------|--------------------------------------|\n| **Comstock \u2013 \u201cSecurity Officer at Comstock\u201d (ParkX Management)** | \u2022 Complete hourly patrol route of the "
   },
   {
     "question": "Do any postings mention travel packages?",
@@ -191,6 +191,23 @@
     "got_tool": "DOCS",
     "tool_ok": true,
     "answer_ok": true,
-    "answer": "No\u202f\u2014 none of the listed postings mention travel packages. (The answer is based on the postings from Avis\u202fBudget, Northrop\u202fGrumman, Perk, Polarsteps, Kins, Wing, and Kinougarde\u2011Compl\u00e9tude.)"
+    "answer": "I don\u2019t know.\u202f(Reviewed postings from Avis\u202fBudget, Northrop\u202fGrumman, Perk, Polarsteps, Kins, Wing, and Kinougarde\u2011Compl\u00e9tude; none explicitly mention travel packages.)"
+  },
+  {
+    "question": "What are the requirements of the highest-paid roles?",
+    "expect_tool": "BOTH",
+    "expect_any": [
+      "require",
+      "skill",
+      "experience",
+      "qualif",
+      "degree"
+    ],
+    "category": "both",
+    "note": "needs SQL to find the top-paid roles, then RAG to read them",
+    "got_tool": "BOTH",
+    "tool_ok": true,
+    "answer_ok": true,
+    "answer": "**Highest\u2011paid role(s) identified in the postings**\n\n| Role (Company) | Maximum compensation shown | Requirements listed in the posting |\n|----------------|---------------------------|--------------------------------------|\n| **Territory Account Manager \u2013 EquipmentShare** | **$600,000 total** (range"
   }
 ]

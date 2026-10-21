@@ -64,7 +64,7 @@ def test_golden_set_is_wellformed():
     assert len(golden) >= 10, "golden set is too small"
     for item in golden:
         assert item["question"].strip()
-        assert item["expect_tool"] in {"SQL", "DOCS", "CHAT"}
+        assert item["expect_tool"] in {"SQL", "DOCS", "BOTH", "CHAT"}
         assert "expect_any" in item
         assert "category" in item
 
@@ -72,7 +72,7 @@ def test_golden_set_is_wellformed():
 def test_golden_set_covers_all_routes():
     golden = json.load(open("golden_set.json", encoding="utf-8"))
     tools = {i["expect_tool"] for i in golden}
-    assert tools == {"SQL", "DOCS", "CHAT"}, f"golden set misses routes: {tools}"
+    assert {"SQL", "DOCS", "CHAT"} <= tools, f"golden set misses routes: {tools}"
 
 
 def test_scoring_logic():

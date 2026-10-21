@@ -1,8 +1,12 @@
 """
 Job Market Agent — Streamlit app.
 
-One assistant, two tools: it decides whether a question needs the DATABASE
-(SQL) or the job DESCRIPTIONS (RAG), then answers with that tool.
+One assistant, three tools. It decides whether a question needs the database
+(SQL), the job descriptions (RAG), or BOTH — then answers with that tool.
+
+The BOTH route: SQL finds the rows that match, then RAG reads their
+descriptions. That's what makes questions like "top 10 roles and their
+requirements" answerable.
 
 Run:   streamlit run agent_app.py
 """
@@ -64,6 +68,10 @@ def chat(prompt, tries=5):
             raise
 
 
+def clean_sql(text):
+    return re.sub(r"^```(?:sql)?|```$", "", text, flags=re.MULTILINE).strip()
+
+
 @st.cache_resource(show_spinner="Loading embedding model...")
 def get_model():
     return TextEmbedding()
@@ -99,8 +107,21 @@ def db_stats():
     return rows
 
 
+SQL_RULES = """Rules:
+- Only a single SELECT. Never modify data.
+- Use the exact column names above.
+- Columns marked "% empty" are mostly missing - filter out the NULLs.
+- SQLite text comparison is CASE-SENSITIVE. Never use `col = 'Remote'`.
+  Compare case-insensitively: LOWER(col) = 'remote' or LOWER(col) LIKE '%remote%'.
+- For salary questions, restrict to `salary_period = 'year'` and use
+  salary_min / salary_max directly (they are already annual). Do NOT use the
+  *_annual columns: some rows have mis-detected pay periods and are inflated
+  ~12x, which skews every "top salaries" list.
+- Return ONLY the SQL, no explanation, no markdown."""
+
+
 def choose_tool(question):
-    word = chat(f"""You route questions to one of three tools.
+    word = chat(f"""You route questions to one of four tools.
 
 SQL  -> questions about numbers, counts, salaries, locations, companies,
         dates, levels: "how many", "average", "top", "which companies",
@@ -108,39 +129,32 @@ SQL  -> questions about numbers, counts, salaries, locations, companies,
 DOCS -> anything about what the job postings SAY: skills, requirements,
         responsibilities, benefits, holidays, travel, policies, security,
         "what does X require", "do any jobs mention ...", "is there any ...".
+BOTH -> the question needs the database AND the descriptions together:
+        "top 10 roles and their requirements", "what skills do the
+        highest-paid jobs ask for", "list the best-paying jobs and what
+        they want".
 CHAT -> ONLY a pure greeting or small talk ("hi", "hello", "how are you",
-        "thanks"). If the message asks ANYTHING about the data, use SQL or DOCS.
+        "thanks"). If the message asks ANYTHING about the data, use SQL,
+        DOCS or BOTH.
 
-Answer with exactly one word: SQL, DOCS or CHAT.
+Answer with exactly one word: SQL, DOCS, BOTH or CHAT.
 
 Question: {question}""").upper()
     if "CHAT" in word:
         return "CHAT"
+    if "BOTH" in word:
+        return "BOTH"
     return "SQL" if "SQL" in word else "DOCS"
 
 
 def run_sql(question):
-    sql = chat(f"""You are a SQLite expert. Write ONE SQLite query to answer the question.
+    sql = clean_sql(chat(f"""You are a SQLite expert. Write ONE SQLite query to answer the question.
 
 {get_schema()}
 
-Rules:
-- Only a single SELECT. Never modify data.
-- Use the exact column names above.
-- Columns marked "% empty" are mostly missing — filter out the NULLs.
-- For salary questions, restrict to `salary_period = 'year'` and use
-  salary_min / salary_max directly (they are already annual). Do NOT use the
-  *_annual columns: some rows have mis-detected pay periods and are inflated
-  ~12x, which skews every "top salaries" list.
-- SQLite text comparison is CASE-SENSITIVE. Never use `col = 'Remote'`.
-  Compare case-insensitively: LOWER(col) = 'remote' or LOWER(col) LIKE '%remote%'.
-  (The values in this table are lower-case.)
-- For ANY salary question, restrict to ONE currency, e.g. `salary_currency = 'USD'`,
-  and state which currency you used. Mixing currencies gives nonsense medians.
-- Return ONLY the SQL, no explanation, no markdown.
+{SQL_RULES}
 
-Question: {question}""")
-    sql = re.sub(r"^```(?:sql)?|```$", "", sql, flags=re.MULTILINE).strip()
+Question: {question}"""))
 
     con = sqlite3.connect(DB_PATH)
     con.row_factory = sqlite3.Row
@@ -183,7 +197,7 @@ def run_docs(question):
         ).fetchone()
         if row:
             parts.append(f"[{row['title']} at {row['company']}]\n{row['description'][:1200]}")
-            src += [f"**{row['title']}** @ {row['company']}  —  score {scores[i]:.3f}"]
+            src.append(f"**{row['title']}** @ {row['company']}  —  score {scores[i]:.3f}")
     con.close()
 
     answer = chat("""Answer using ONLY the job postings below.
@@ -194,11 +208,60 @@ Postings:
     return answer, "", "\n\n".join(src)
 
 
+def run_both(question):
+    """SQL finds the rows, then RAG reads their descriptions."""
+    sql = clean_sql(chat(f"""You are a SQLite expert. Write ONE SQLite query that returns
+the job_id column for the postings that best match the question.
+
+{get_schema()}
+
+{SQL_RULES}
+- Return the job_id column (plus any columns the question asks for).
+- Always add LIMIT 10 unless the question asks for a different number.
+
+Question: {question}"""))
+
+    con = sqlite3.connect(DB_PATH)
+    con.row_factory = sqlite3.Row
+    try:
+        rows = con.execute(sql).fetchall()
+    except Exception as e:
+        con.close()
+        return f"Query failed: {e}", sql, ""
+
+    if not rows:
+        con.close()
+        return "The query returned no rows.", sql, ""
+
+    keys = rows[0].keys()
+    if "job_id" not in keys:
+        con.close()
+        return "The query did not return a job_id column.", sql, ""
+
+    parts, src = [], []
+    for r in rows[:10]:
+        row = con.execute(
+            f"SELECT title, company, description FROM {TABLE} WHERE job_id = ?",
+            (str(r["job_id"]),),
+        ).fetchone()
+        if row:
+            parts.append(f"[{row['title']} at {row['company']}]\n{row['description'][:1200]}")
+            src.append(f"**{row['title']}** @ {row['company']}")
+    con.close()
+
+    answer = chat("""Answer using ONLY the job postings below.
+If the answer is not there, say you don't know. Mention the companies you used.
+
+Postings:
+""" + "\n\n".join(parts) + f"\n\nQuestion: {question}")
+    return answer, sql, "\n\n".join(src)
+
+
 # ---------------- UI ----------------
 
 st.title("Job Market Agent")
-st.caption("One assistant, two tools. It decides whether your question needs the "
-           "database (SQL) or the job descriptions (RAG) — then answers with that tool.")
+st.caption("One assistant, three tools. It decides whether your question needs the "
+           "database (SQL), the job descriptions (RAG), or both — then answers.")
 
 if not os.path.exists(DB_PATH) or not os.path.exists(CACHE):
     st.error("Missing `jobs.db` or `desc_embeddings.npz` in the app folder.")
@@ -210,11 +273,10 @@ with st.sidebar:
     st.write("**1,000** descriptions indexed for search (RAG tool)")
     st.divider()
     st.caption("Try:")
-    st.caption("• How many jobs are remote?")
-    st.caption("• Which 10 companies have the most postings?")
-    st.caption("• What is the median annual salary in the US?")
-    st.caption("• What skills do data analyst roles require?")
-    st.caption("• Do any jobs mention AI agents?")
+    st.caption("• How many jobs are remote?  (SQL)")
+    st.caption("• What skills do data analyst roles require?  (RAG)")
+    st.caption("• Top 10 roles by salary and their requirements  (BOTH)")
+    st.caption("• Do any jobs mention AI agents?  (RAG)")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -236,14 +298,21 @@ if question := st.chat_input("Ask about the job market..."):
             tool = choose_tool(question)
             if tool == "CHAT":
                 answer = chat(
-                    f"Today is {__import__('datetime').date.today().strftime('%A, %d %B %Y')}.\n" f"The user said: {question}\n"
-                    "You are a job-market assistant. Reply in one friendly sentence, "
-                    "then invite them to ask about the job data (salaries, roles, "
-                    "skills, companies, locations).")
+                    f"Today is {__import__('datetime').date.today().strftime('%A, %d %B %Y')}.\n"
+                    f"The user said: {question}\n"
+                    "You are the Job Market Agent (that is your name). Reply in ONE "
+                    "friendly sentence. Do NOT state any facts about jobs, salaries, "
+                    "benefits or the market - you have no data for this message. Then "
+                    "invite them to ask about salaries, roles, skills, companies or "
+                    "locations.")
                 detail, label = "", "Details"
             elif tool == "SQL":
                 answer, sql, _ = run_sql(question)
                 detail, label = f"```sql\n{sql}\n```", "SQL it ran"
+            elif tool == "BOTH":
+                answer, sql, src = run_both(question)
+                detail = f"```sql\n{sql}\n```\n\n**Postings it read:**\n\n{src}"
+                label = "SQL + postings it used"
             else:
                 answer, _, src = run_docs(question)
                 detail, label = src, "Postings it used"

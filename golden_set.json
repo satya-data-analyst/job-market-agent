@@ -136,5 +136,18 @@
     ],
     "category": "rag-negative",
     "note": "NEGATIVE TEST - nothing mentions travel packages; a good agent says so"
+  },
+  {
+    "question": "What are the requirements of the highest-paid roles?",
+    "expect_tool": "BOTH",
+    "expect_any": [
+      "require",
+      "skill",
+      "experience",
+      "qualif",
+      "degree"
+    ],
+    "category": "both",
+    "note": "needs SQL to find the top-paid roles, then RAG to read them"
   }
 ]

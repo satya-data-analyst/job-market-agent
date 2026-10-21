@@ -36,6 +36,8 @@ def run_one(item, model, vecs, ids):
         answer, _ = agent.tool_sql(q)
     elif tool == "DOCS":
         answer, _ = agent.tool_docs(q, model, vecs, ids)
+    elif tool == "BOTH":
+        answer, _, _ = agent.tool_both(q)
     else:
         answer = "(chat reply)"
     return tool, answer

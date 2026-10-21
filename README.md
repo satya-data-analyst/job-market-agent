@@ -1,12 +1,13 @@
 # Job Market Agent
 
-One assistant, two tools. Ask a question in plain English — it decides whether
-it needs the database (SQL) or the job descriptions (RAG), then answers with
-that tool.
+![CI](https://github.com/satya-data-analyst/job-market-agent/actions/workflows/ci.yml/badge.svg)
 
-![Job Market Agent](screenshot.png)
+One assistant, **three tools**. Ask a question in plain English — it decides
+whether it needs the database (SQL), the job descriptions (RAG), or **both**.
 
 **Live demo:** https://job-market-agent-v1.streamlit.app
+
+![Job Market Agent](screenshot.png)
 
 ## What it does
 
@@ -42,6 +43,11 @@ Python, Streamlit, SQLite, fastembed, Groq
   directly, avoiding the inflated `*_annual` columns.
 - `seniority` is 94% empty, so seniority questions are unreliable.
 - Only 1,000 of the 10,000 descriptions are embedded for search (compute limits).
+- The router picks one route per question; genuinely mixed questions can
+  still land on the wrong one.
+- Salary rankings ignore hourly/monthly postings (see Known data issues).
+- The workplace_type model is ~71% accurate, so its filled values are
+  estimates, not facts.
 
 
 ## Note on data
